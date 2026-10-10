@@ -27,7 +27,7 @@ RFQ request bodies are limited to 1 MB and RFQ text to 50,000 characters. Invali
 
 ## Limitations
 
-Parsing is heuristic and does not replace a salesperson's review. Negative or fractional sheet quantities and explicit mixed or unsupported units are blocked from pricing; clarification must supply supported values. The app does not contact buyers or suppliers, validate live inventory, certify materials, or connect to Nicrronninoo or Block Convey. Those integrations are unavailable in this prototype; a real integration requires authorized API documentation, credentials, and agreed data mappings. Exports remain drafts and include source evidence, unresolved issues, and synthetic-data labeling where applicable. CSV cells are escaped against spreadsheet formula interpretation.
+Parsing is heuristic and does not replace a salesperson's review. Negative or fractional sheet quantities and explicit mixed or unsupported units are blocked from pricing; clarification must supply supported values. The app does not contact buyers or suppliers, validate live inventory, certify materials, or use sponsor models to set quote prices. Optional Nicrron advice and Block Convey PRISM tracing are separate from the deterministic quote engine, as described below. Exports remain drafts and include source evidence, unresolved issues, and synthetic-data labeling where applicable. CSV cells are escaped against spreadsheet formula interpretation.
 
 ### Optional sponsor assistance (not required to quote)
 
@@ -58,10 +58,12 @@ paste, analyze, or export.
 Implementation references: [Nicrron quickstart](https://nicrron.ai/docs/quickstart),
 [PRISM documentation](https://blockconvey.com/docs).
 
-**Validation status:** adapter tests use controlled fake provider responses, not
-live sponsor credentials. No successful live sponsor request or dashboard trace
-has been verified. This HTTP trace path is after-call observation, not a blocking
-guardrail. Sponsor guardrail/evaluator/knowledge-base requirements remain
+**Validation status (2026-10-10):** adapter tests use controlled provider responses.
+The deployed preview also passed a real Nicrron request and PRISM trace ingestion;
+PRISM setup-doctor returned HTTP 200, `live_connected: true`, and
+`blocked_step: null`. A real mobile browser verified that requesting advice
+records a trace without changing the quote. This HTTP trace path is after-call
+observation, not a blocking guardrail. Sponsor guardrail/evaluator/knowledge-base requirements remain
 unfulfilled/unverified. This addition must not be presented as complete hackathon
 sponsor compliance. Existing deterministic draft integration fields describe the
 quote engine, not whether optional advice was requested.
