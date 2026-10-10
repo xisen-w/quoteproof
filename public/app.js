@@ -5,8 +5,19 @@ const samples = {
 };
 const $ = (s) => document.querySelector(s);
 const rfqEl = $('#rfq'), countEl = $('#char-count'), results = $('#results');
-let latest = null, answers = {}, toastTimer, quoteRevision = 0;
-rfqEl.addEventListener('input', () => { quoteRevision++; $('#explanation').textContent = ''; $('#explain-status').textContent = 'Requires server-side provider configuration.'; countEl.textContent = `${rfqEl.value.length.toLocaleString()} / 20,000`; answers = {}; });
+let latest = null, answers = {}, toastTimer, quoteRevision = 0, explaining = false;
+function syncActions() {
+  for (const id of ['export-json', 'export-csv', 'export-text']) $('#'+id).disabled = !latest;
+  $('#explain').disabled = !latest || explaining;
+}
+function invalidateQuote() {
+  quoteRevision++; latest = null; syncActions();
+  $('#explanation').textContent = '';
+  $('#explain-status').textContent = 'Analyze the current input before requesting advice.';
+  if (!results.hidden) { $('#status-title').textContent = 'Input changed — analyze again'; $('#status-copy').textContent = 'The previous review is out of date. Export and AI assistance are paused.'; $('#status-banner').classList.remove('ready'); $('#status-pill').textContent = 'OUT OF DATE'; }
+}
+syncActions();
+rfqEl.addEventListener('input', () => { invalidateQuote(); countEl.textContent = `${rfqEl.value.length.toLocaleString()} / 20,000`; answers = {}; });
 document.querySelectorAll('[data-sample]').forEach(button => button.addEventListener('click', () => {
   rfqEl.value = samples[button.dataset.sample]; rfqEl.dispatchEvent(new Event('input'));
   $('#form-error').hidden = true; rfqEl.focus();
@@ -20,8 +31,8 @@ $('#file-input').addEventListener('change', async e => {
 });
 $('#analyze').addEventListener('click', () => analyze());
 async function analyze() {
-  quoteRevision++;
-  $('#explanation').textContent = '';
+  invalidateQuote();
+  const revision = quoteRevision;
   const rfq = rfqEl.value.trim();
   if (!rfq) { showError('Paste an RFQ or choose a sample before analyzing.'); rfqEl.focus(); return; }
   $('#form-error').hidden = true;
@@ -29,11 +40,12 @@ async function analyze() {
   try {
     const response = await fetch('/api/quote', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({rfq, answers}) });
     let data; try { data = await response.json(); } catch { throw new Error('The server returned an unreadable response.'); }
+    if (revision !== quoteRevision) return;
     if (!response.ok) throw new Error(data.error || data.message || `Request failed (${response.status}).`);
     if (!Array.isArray(data.lines)) throw new Error('The quote response is missing line items.');
-    latest = data; render(data); results.hidden = false;
+    latest = data; render(data); syncActions(); results.hidden = false;
     results.scrollIntoView({behavior:'smooth', block:'start'});
-  } catch (err) { showError(err.message || 'Could not analyze this RFQ. Check that the local server is running.'); }
+  } catch (err) { if (revision === quoteRevision) showError(err.message || 'Could not analyze this RFQ. Check that the local server is running.'); }
   finally { button.disabled = false; button.querySelector('span:first-child').textContent = 'Analyze RFQ'; }
 }
 function render(data) {
@@ -51,12 +63,17 @@ function render(data) {
   lines.forEach((line,i) => (line.issues || []).forEach(issue => questions.push({line,i,issue})));
   $('#issue-summary').textContent = questions.length ? `${questions.length} open ${questions.length === 1 ? 'question' : 'questions'} across ${lines.length} ${lines.length === 1 ? 'line' : 'lines'}` : 'No open questions';
   $('#questions-list').innerHTML = questions.length ? questions.map(q => renderQuestion(q)).join('') : '<div class="no-questions">Every extracted field has support. Review the evidence and confirm all commercial terms before sending.</div>';
-  $('#questions-list').querySelectorAll('input[data-field]').forEach(input => input.addEventListener('change', () => {
-    const i = input.dataset.line, field = input.dataset.field; answers[i] ||= {};
-    answers[i][field] = ['thickness_in','width_in','length_in'].includes(field) ? (input.value.trim() ? Number(input.value) : null) : input.value.trim();
-    input.classList.toggle('answered', !!input.value.trim());
-    if (input.value.trim() && field !== 'note') { showToast('Clarification saved — rechecking quote'); analyze(); }
-  }));
+  $('#questions-list').querySelectorAll('input[data-field]').forEach(input => {
+    input.addEventListener('input', () => {
+      const i = input.dataset.line, field = input.dataset.field; answers[i] ||= {};
+      answers[i][field] = ['thickness_in','width_in','length_in'].includes(field) ? (input.value.trim() ? Number(input.value) : null) : input.value.trim();
+      input.classList.toggle('answered', !!input.value.trim());
+      invalidateQuote();
+    });
+    input.addEventListener('change', () => {
+      if (input.dataset.field !== 'note') { showToast('Clarification changed — rechecking quote'); analyze(); }
+    });
+  });
 }
 function renderLine(line,i) {
   const specs = [['Grade',line.grade,'grade'],['Thk',fmt(line.thickness_in),'thickness_in'],['Width',fmt(line.width_in),'width_in'],['Length',fmt(line.length_in),'length_in']].filter(([,v]) => v !== null && v !== undefined && v !== '');
@@ -99,8 +116,9 @@ function showError(message){const el=$('#form-error');el.textContent=message;el.
 function showToast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600)}
 
 $('#explain').addEventListener('click', async () => {
-  const button = $('#explain'), revision = quoteRevision;
-  button.disabled = true;
+  if (!latest || explaining) return;
+  const revision = quoteRevision;
+  explaining = true; syncActions();
   $('#explain-status').textContent = 'Requesting explanation…';
   $('#explanation').textContent = '';
   try {
@@ -111,5 +129,5 @@ $('#explain').addEventListener('click', async () => {
     $('#explanation').textContent = data.explanation;
     $('#explain-status').textContent = `AI advice only · PRISM trace: ${data.trace.status}. Quote unchanged.`;
   } catch (error) { if (revision === quoteRevision) $('#explain-status').textContent = error.message || 'Assistance unavailable.'; }
-  finally { button.disabled = false; }
+  finally { explaining = false; syncActions(); }
 });
