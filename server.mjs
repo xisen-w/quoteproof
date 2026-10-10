@@ -3,11 +3,14 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildQuote } from './engine.mjs';
+import { explainQuote } from './sponsors.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const publicRoot = resolve(root, 'public');
 const port = Number(process.env.PORT || 3000);
 const maxBodyBytes = 1_000_000;
+let assistanceBusy = false;
+const assistanceRequests = [];
 const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.json':'application/json; charset=utf-8', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.webp':'image/webp', '.ico':'image/x-icon' };
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
@@ -46,6 +49,18 @@ async function serveStatic(pathname, res) {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   if (req.method === 'GET' && url.pathname === '/api/health') return send(res, 200, { ok: true, service: 'QuoteProof', mode: 'deterministic' });
+  if (req.method === 'POST' && url.pathname === '/api/explain') {
+    if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}` && req.headers.origin !== `https://${req.headers.host}`) return send(res, 403, { error: 'Cross-origin request denied.' });
+    const now = Date.now();
+    while (assistanceRequests.length && assistanceRequests[0] < now - 3600000) assistanceRequests.shift();
+    if (assistanceBusy || assistanceRequests.length >= 20) return send(res, 429, { error: 'Optional assistance is busy or has reached this server’s hourly limit. Try later.' });
+    assistanceBusy = true;
+    assistanceRequests.push(now);
+    try {
+      const result = await explainQuote(await readJson(req));
+      return send(res, result.status === 'ok' ? 200 : 503, result);
+    } catch (error) { return send(res, error.status || 400, { error: error.status ? error.message : 'Could not process assistance request.' }); } finally { assistanceBusy = false; }
+  }
   if (req.method === 'POST' && url.pathname === '/api/quote') {
     try {
       const body = await readJson(req);

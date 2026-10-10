@@ -28,3 +28,40 @@ RFQ request bodies are limited to 1 MB and RFQ text to 50,000 characters. Invali
 ## Limitations
 
 Parsing is heuristic and does not replace a salesperson's review. Negative or fractional sheet quantities and explicit mixed or unsupported units are blocked from pricing; clarification must supply supported values. The app does not contact buyers or suppliers, validate live inventory, certify materials, or connect to Nicrronninoo or Block Convey. Those integrations are unavailable in this prototype; a real integration requires authorized API documentation, credentials, and agreed data mappings. Exports remain drafts and include source evidence, unresolved issues, and synthetic-data labeling where applicable. CSV cells are escaped against spreadsheet formula interpretation.
+
+### Optional sponsor assistance (not required to quote)
+
+The **Explain with Nicrron** button explicitly sends the RFQ and deterministic
+review to Nicrron's OpenAI-compatible endpoint using `nicrron/auto`. Its plain-text
+advice is separate from quote calculations and exports. The system prompt forbids
+inventing specifications, prices, or certificates; all advice still needs human
+review. Configure only server-side environment variables:
+
+- `NICRRON_API_KEY`
+- `PRISMTRACE_API_KEY`
+- `PRISMTRACE_PROJECT_ID`
+
+After a successful model response, configured PRISM tracing records the actual
+messages, output, returned model, and measured latency. The UI distinguishes a
+recorded trace, unconfirmed response, unavailable configuration, and delivery
+failure. No keys are served to the browser. Missing keys leave normal quoting
+working and show assistance as unavailable. Network responses and input sizes
+are bounded; redirects are rejected. Assistance has a process-local limit of 20
+attempts/hour and one concurrent request; this is a prototype limit, not durable
+account-level billing control. Restarting or scaling resets/multiplies it.
+
+The model timeout is 15 seconds; trace timeout is 5 seconds. Requesting AI advice
+may transmit RFQ data to both configured providers. Do not use confidential RFQs
+without appropriate provider arrangements. The app does not auto-transmit on
+paste, analyze, or export.
+
+Implementation references: [Nicrron quickstart](https://nicrron.ai/docs/quickstart),
+[PRISM documentation](https://blockconvey.com/docs).
+
+**Validation status:** adapter tests use controlled fake provider responses, not
+live sponsor credentials. No successful live sponsor request or dashboard trace
+has been verified. This HTTP trace path is after-call observation, not a blocking
+guardrail. Sponsor guardrail/evaluator/knowledge-base requirements remain
+unfulfilled/unverified. This addition must not be presented as complete hackathon
+sponsor compliance. Existing deterministic draft integration fields describe the
+quote engine, not whether optional advice was requested.

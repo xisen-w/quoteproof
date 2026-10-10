@@ -5,8 +5,8 @@ const samples = {
 };
 const $ = (s) => document.querySelector(s);
 const rfqEl = $('#rfq'), countEl = $('#char-count'), results = $('#results');
-let latest = null, answers = {}, toastTimer;
-rfqEl.addEventListener('input', () => { countEl.textContent = `${rfqEl.value.length.toLocaleString()} / 20,000`; answers = {}; });
+let latest = null, answers = {}, toastTimer, quoteRevision = 0;
+rfqEl.addEventListener('input', () => { quoteRevision++; $('#explanation').textContent = ''; $('#explain-status').textContent = 'Requires server-side provider configuration.'; countEl.textContent = `${rfqEl.value.length.toLocaleString()} / 20,000`; answers = {}; });
 document.querySelectorAll('[data-sample]').forEach(button => button.addEventListener('click', () => {
   rfqEl.value = samples[button.dataset.sample]; rfqEl.dispatchEvent(new Event('input'));
   $('#form-error').hidden = true; rfqEl.focus();
@@ -20,6 +20,8 @@ $('#file-input').addEventListener('change', async e => {
 });
 $('#analyze').addEventListener('click', () => analyze());
 async function analyze() {
+  quoteRevision++;
+  $('#explanation').textContent = '';
   const rfq = rfqEl.value.trim();
   if (!rfq) { showError('Paste an RFQ or choose a sample before analyzing.'); rfqEl.focus(); return; }
   $('#form-error').hidden = true;
@@ -95,3 +97,19 @@ $('#export-text').addEventListener('click',async()=>{if(!latest)return;const obj
 function csvCell(v){const raw=String(v??'');const safe=/^[\s]*[=+\-@\t\r\n]/.test(raw)?`'${raw}`:raw;return `"${safe.replace(/"/g,'""')}"`}
 function showError(message){const el=$('#form-error');el.textContent=message;el.hidden=false}
 function showToast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600)}
+
+$('#explain').addEventListener('click', async () => {
+  const button = $('#explain'), revision = quoteRevision;
+  button.disabled = true;
+  $('#explain-status').textContent = 'Requesting explanation…';
+  $('#explanation').textContent = '';
+  try {
+    const response = await fetch('/api/explain', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({rfq:rfqEl.value.trim(),answers})});
+    const data = await response.json();
+    if (revision !== quoteRevision) return;
+    if (!response.ok) throw new Error(data.error || 'Assistance unavailable.');
+    $('#explanation').textContent = data.explanation;
+    $('#explain-status').textContent = `AI advice only · PRISM trace: ${data.trace.status}. Quote unchanged.`;
+  } catch (error) { if (revision === quoteRevision) $('#explain-status').textContent = error.message || 'Assistance unavailable.'; }
+  finally { button.disabled = false; }
+});
