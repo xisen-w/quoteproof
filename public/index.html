@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f4ef"><title>QuoteProof — RFQ review</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="Primary navigation">
+      <a class="brand" href="#" aria-label="QuoteProof home"><span class="brand-mark"><i></i><i></i><i></i></span><span>quote<span class="brand-light">proof</span></span></a>
+      <div class="rail-label">WORKSPACE</div>
+      <a class="nav-item active" href="#workspace"><span class="nav-icon">▤</span> Quote desk <span class="nav-count">01</span></a>
+      <a class="nav-item disabled" href="#" aria-disabled="true"><span class="nav-icon">◷</span> Recent drafts</a>
+      <a class="nav-item disabled" href="#" aria-disabled="true"><span class="nav-icon">▦</span> Catalog</a>
+      <div class="rail-bottom"><div class="avatar">QP</div><div><b>Seller workspace</b><small>Local prototype</small></div><span class="dots">•••</span></div>
+    </aside>
+    <main id="workspace">
+      <header class="topbar"><div class="breadcrumbs">Workspace <span>/</span> <strong>Quote desk</strong></div><div class="top-actions"><span class="local-status"><i></i> LOCAL SESSION</span><button class="icon-button" aria-label="Help">?</button></div></header>
+      <section class="page-heading"><div><div class="eyebrow">RFQ WORKBENCH <span>·</span> 01 / INTAKE</div><h1>Turn requests into<br class="mobile-break"> <em>traceable</em> quotes.</h1><p>Every number tied back to its source. Every unknown called out before it reaches a buyer.</p></div><div class="draft-stamp"><span class="stamp-icon">✳</span><div><b>DRAFT ONLY</b><small>Human review required</small></div></div></section>
+      <div class="workspace-grid">
+        <section class="intake-card panel" aria-labelledby="intake-title">
+          <div class="panel-heading"><div class="step-mark">01</div><div><h2 id="intake-title">Bring in an RFQ</h2><p>Paste the request or drop a text file. Original wording stays attached.</p></div><span class="optional-tag">INTAKE</span></div>
+          <div class="sample-row"><span>TRY A SAMPLE</span><button class="sample-button" data-sample="explicit">Clear specs</button><button class="sample-button" data-sample="ambiguous">Needs clarification</button><button class="sample-button" data-sample="conflict">Conflicting grade</button></div>
+          <label class="sr-only" for="rfq">RFQ text</label>
+          <div class="input-wrap"><textarea id="rfq" placeholder="Paste a buyer request here…&#10;&#10;Example: 10 sheets, stainless grade 304, 0.060 in thick, 48 x 96 in. Mill test report required." maxlength="20000"></textarea><div class="input-footer"><label class="file-button" for="file-input"><span>↥</span> Upload .txt</label><input id="file-input" type="file" accept=".txt,text/plain"><span class="char-count" id="char-count">0 / 20,000</span></div></div>
+          <div class="intake-actions"><div class="engine-note"><span class="spark">✳</span> Deterministic parsing <span class="tip" title="No external AI service is used in this prototype">ⓘ</span></div><button class="primary-button" id="analyze"><span>Analyze RFQ</span><span class="button-arrow">↗</span></button></div>
+          <div class="form-error" id="form-error" role="alert" hidden></div>
+        </section>
+        <aside class="trust-card"><div class="trust-top"><span class="trust-icon">◎</span><span>QUOTE INTEGRITY</span></div><h3>Evidence before estimates.</h3><p>QuoteProof separates what the buyer said from what the catalog can support.</p><div class="trust-rule"></div><div class="trust-row"><span class="check-dot">✓</span><div><b>Source preserved</b><small>Exact RFQ wording stays with each line</small></div></div><div class="trust-row"><span class="check-dot">✓</span><div><b>Price provenance</b><small>Unpriced items stay unpriced</small></div></div><div class="trust-row"><span class="check-dot">✓</span><div><b>Review gates</b><small>Unknown specs block a ready quote</small></div></div><div class="data-note"><span>ⓘ</span> Demo catalog prices are synthetic. Not market data.</div></aside>
+      </div>
+      <section class="results" id="results" hidden aria-live="polite">
+        <div class="results-heading"><div><div class="eyebrow">02 / REVIEW</div><h2>Quote review <span id="line-count" class="count-pill">0 LINES</span></h2><p>Check the extracted specs against the original request before exporting.</p></div><div class="review-actions"><button class="secondary-button" id="export-csv">↓ <span>Export CSV</span></button><button class="secondary-button" id="export-json">↓ <span>Export JSON</span></button></div></div>
+        <div class="review-banner" id="status-banner"><span class="banner-icon">!</span><div><b id="status-title">Clarification needed</b><small id="status-copy">Resolve open questions before sharing this draft.</small></div><span class="banner-pill" id="status-pill">REVIEW REQUIRED</span></div>
+        <div class="result-grid"><div class="lines-card panel"><div class="table-toolbar"><b>LINE ITEMS</b><span>Source evidence <span class="tiny-dot"></span> Catalog match</span></div><div id="line-list"></div><div class="total-row"><div><b>Indicative total</b><small>Only supported, unblocked lines included</small></div><strong id="total">$0.00</strong></div></div>
+          <aside class="review-sidebar"><div class="questions-card panel"><div class="side-card-heading"><span class="question-mark">?</span><div><h3>Resolve questions</h3><small id="issue-summary">No open questions</small></div></div><div id="questions-list"></div></div><div class="provider-card"><div class="provider-head"><span>CONNECTED SOURCES</span><span class="offline-tag"><i></i> UNAVAILABLE</span></div><div class="provider-row"><span class="provider-symbol">N</span><div><b>Nicrronninoo</b><small>Provider connection not configured</small></div><span class="unavailable">Unavailable</span></div><div class="provider-row"><span class="provider-symbol">B</span><div><b>Block Convey</b><small>Provider connection not configured</small></div><span class="unavailable">Unavailable</span></div><p>Provider verification is not part of this local prototype.</p></div></aside></div>
+        <div class="export-note"><span>✳</span><span><b>This is a quote draft.</b> Confirm specifications, certificates, price validity, shipping and tax before sending to a buyer.</span><button id="export-text">Copy draft summary</button></div>
+      </section>
+      <footer><span>QUOTEPROOF <span class="footer-sep">/</span> RFQ → REVIEW → DRAFT</span><span>LOCAL PROTOTYPE <span class="footer-sep">·</span> NO PROVIDER CONNECTIONS</span></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body></html>
